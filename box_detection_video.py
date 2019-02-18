@@ -3,17 +3,17 @@ import cv2
 import time
 
 # FOR CAPTURING DIRECTLY FROM WEBCAM
-cap = cv2.VideoCapture(1)
+#cap = cv2.VideoCapture(1)
 
 # FOR CAPTURING FROM SAMPLE VIDEO
-cap = cv2.VideoCapture('table3_1.avi')
+cap = cv2.VideoCapture('table2_1.avi')
 
 while(True):
         
     # capture frame-by-frame
     ret, frame = cap.read()
 
-    # Display the resulting frame
+    # Display the raw frame
     cv2.imshow('frame', frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
@@ -27,19 +27,21 @@ while(True):
     # get a mask of all pixels that satisfy this constraint
     filtered_boxes = cv2.inRange(hsv, lower_blue, upper_blue)
     
-    gaussian = cv2.GaussianBlur(filtered_boxes,(5,5),1)
+    # blurs the points together to try to reduce outliers
+    gaussian = cv2.GaussianBlur(filtered_boxes,(5,5),3)
     
     # get contours of boxes within mask
-    thresh = cv2.threshold(filtered_boxes, 127, 255, 0)[1]
+    thresh = cv2.threshold(gaussian, 50, 255, 0)[1]
     contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
     
     # find centroid of each contour
     annotated_image = frame.copy()
     
-    print("coords:")
+    #print("coords:")
     for c in contours[:]:
         
-        if(len(c) >= 6):
+        # checks that each identified blob is large enough to be consideres a box
+        if(len(c) >= 5):
             # get x and y coordinates of contour:
             moments = cv2.moments(c)
         
@@ -61,8 +63,8 @@ while(True):
     cv2.imshow('centre of masses found', annotated_image)
     cv2.imshow('gaussian', gaussian)
             
-    print("\n")
-    time.sleep(1)
+    #print("\n")
+    time.sleep(0.1)
 
 
 cv2.waitKey(0)
