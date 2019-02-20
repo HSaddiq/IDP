@@ -4,7 +4,9 @@ from img_utils import find_box_coords
 
 img = cv2.imread('intial screengrabs/c22.png', -1)
 
-coords = find_box_coords(img)
+img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+coords = find_box_coords(img_hsv)
 annotated_image = img.copy()
 
 for i in coords:
