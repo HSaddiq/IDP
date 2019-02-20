@@ -39,20 +39,29 @@ def calculate_turn_angle(current_coord, next_coord, current_bearing):
     # converts from degrees to radians
     theta = (theta / np.pi) * 180
     
-    #print(current_bearing, theta)
+    print(current_bearing, theta)
     
-    # adds 360 to both to alleviate 0 error
+    # adds 360 to both to alleviate negative error
     current_bearing = current_bearing + 360
     theta = theta + 360
     
-    #print(current_bearing, theta)
+    print(current_bearing, theta)
     
     bearing = theta - current_bearing
     
-    if(bearing < -180):
+    print(bearing)
+    
+    bearing = bearing % 360
+    
+    print(bearing)
+    
+    if(bearing < 0):
         bearing = 360 + bearing
-    elif(bearing > 180):
-        bearing = 360 - bearing
+    
+#    if(bearing < -180):
+#        bearing = 360 + bearing
+#    elif(bearing > 180):
+#        bearing = 360 - bearing
         
     return round(bearing)
 
@@ -61,9 +70,7 @@ for i in range(0,5):
     current_coord = get_next_coord(list_of_coords, current_coord)
     print(current_coord)
 
-# test for calculating a turn angle based on current position, next block position and the current bearing
-print(calculate_turn_angle([0,0],[-1,-1],-45))
+# test for calculating a turn angle based on current position, next block position and the current bearing from 0 to 360 anticlockwise
+print(calculate_turn_angle([0,0],[1,0],270))
 
-
-#print(calculate_turn_angle(current_coord, get_next_coord(list_of_coords, current_coord), -45))
 
