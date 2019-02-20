@@ -27,35 +27,43 @@ def get_next_coord(list, current):
         
     return nearest_coord
 
+def calculate_turn_angle(current_coord, next_coord, current_bearing):
+        
+    # finds x and y components of relative position vector
+    x_comp = next_coord[0] - current_coord[0]
+    y_comp = next_coord[1] - current_coord[1]
+
+    # calculate angle between current coordinate and the next
+    theta = np.arctan2(y_comp, x_comp)
+    
+    # converts from degrees to radians
+    theta = (theta / np.pi) * 180
+    
+    #print(current_bearing, theta)
+    
+    # adds 360 to both to alleviate 0 error
+    current_bearing = current_bearing + 360
+    theta = theta + 360
+    
+    #print(current_bearing, theta)
+    
+    bearing = theta - current_bearing
+    
+    if(bearing < -180):
+        bearing = 360 + bearing
+    elif(bearing > 180):
+        bearing = 360 - bearing
+        
+    return round(bearing)
+
 # test for getting list of coordinates in order from get_next_coord
 for i in range(0,5):
     current_coord = get_next_coord(list_of_coords, current_coord)
     print(current_coord)
 
-def calculate_turn_angle(current_coord, next_coord, current_bearing):
-    
-    # converts from degrees to radians
-    current_bearing = (current_bearing / 180) * (np.pi)
-    
-    # finds x and y components of relative position vector
-    x_comp = next_coord[0] - current_coord[0]
-    y_comp = next_coord[1] - current_coord[1]
-
-    # convert to polar    
-    mag = x_comp**2 + y_comp**2
-    theta = np.arctan2(y_comp, x_comp)
-    
-    bearing = theta-current_bearing
-    
-    if(bearing < -np.pi):
-        bearing = -(bearing+np.pi)
-    elif(bearing > np.pi):
-        bearing = bearing-np.pi
-    
-    # converts back to degrees
-    bearing = (bearing / (np.pi)) * 180
-    
-    return bearing
-
 # test for calculating a turn angle based on current position, next block position and the current bearing
-print(calculate_turn_angle([1,2],[2,5],-180))
+print(calculate_turn_angle([0,0],[-1,-1],-45))
+
+
+#print(calculate_turn_angle(current_coord, get_next_coord(list_of_coords, current_coord), -45))
+
