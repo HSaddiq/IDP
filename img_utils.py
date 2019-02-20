@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import time
 
 
 # Contains all functions related to bearing and positioning of robot
@@ -28,7 +27,7 @@ def find_box_coords(frame):
 
     for c in contours[:]:
 
-        # checks that each identified blob is large enough to be consideres a box
+        # checks that each identified blob is large enough to be considered a box
         if (len(c) >= 5):
             # get x and y coordinates of contour:
             moments = cv2.moments(c)
