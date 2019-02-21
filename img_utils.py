@@ -22,9 +22,6 @@ def find_box_coords(frame):
     # get contours of boxes within mask
     thresh = cv2.threshold(gaussian, 50, 255, 0)[1]
     contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
-        
-    # find centroid of each contour
-    annotated_image = frame.copy()
     
     list_of_coords = []
     
@@ -44,9 +41,6 @@ def find_box_coords(frame):
         
                 # Print list of coords from current frame
                 list_of_coords.append((xbar, ybar))
-                
-                # Draw on annotated image:
-                cv2.circle(annotated_image, (xbar, ybar), 2, (0, 0, 255), -1)
            
     return(list_of_coords)
 
