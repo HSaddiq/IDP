@@ -26,17 +26,18 @@ while True:
         top_left = corners[0][0][0]
         top_right = corners[0][0][1]
         midpoint_top = (top_left + top_right) / 2
-        robot.bearing = np.arctan(
+        robot.bearing = - np.arctan(
             (midpoint_top[1] - average_point[1]) / (midpoint_top[0] - average_point[0])) * 180 / np.pi
+        robot.bearing = (robot.bearing + 360) % 360
 
     cv2.circle(frame, (robot.x, robot.y), 2, (0, 0, 255), -1)
     # cv2.line(frame, (robot.x, robot.y),
     #          (robot.x + 100 * np.cos(robot.bearing * np.pi / 180), robot.y + 100 * np.sin(robot.bearing * np.pi / 180)),
     #          2, (0, 0, 255), -1)
-    print(int(np.cos(robot.bearing * np.pi / 180)))
+
     cv2.line(frame, (robot.x, robot.y),
              (robot.x + int(100 * np.cos(robot.bearing * np.pi / 180)),
-              robot.y + int(100 * np.sin(robot.bearing * np.pi / 180))),
+              robot.y - int(100 * np.sin(robot.bearing * np.pi / 180))),
              (0, 0, 0))
 
     font = cv2.FONT_HERSHEY_SIMPLEX
