@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 from classes import box, bot
 
-cap = cv2.VideoCapture("aruco.avi")
+cap = cv2.VideoCapture("test_videos/aruco.avi")
 
 robot = bot()
 

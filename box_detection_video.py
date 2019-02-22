@@ -6,7 +6,7 @@ import time
 # cap = cv2.VideoCapture(1)
 
 # FOR CAPTURING FROM SAMPLE VIDEO
-cap = cv2.VideoCapture('table2_1.avi')
+cap = cv2.VideoCapture('test_videos/table2_1.avi')
 
 while (True):
 
