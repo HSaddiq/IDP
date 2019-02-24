@@ -1,14 +1,13 @@
 # this function returns a list of box coordinates via serial
 
 import numpy as np
-import cv2
 import serial
 import keyboard
 
 ser = serial.Serial()
 
 ser.baudrate = 9600
-ser.port = "COM6"
+ser.port = "COM7"
 ser.open()
 
 start_string = ser.readline()
