@@ -5,7 +5,7 @@ class bot:
         self.bearing = None
 
 class box:
-    def __init__(self, x, y, processed):
+    def __init__(self, x, y, available):
         self.x = x
         self.y = y
-        self.processed = processed
+        self.available = available
