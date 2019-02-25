@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 import numpy as np
 import serial
 
-cap = cv2.VideoCapture("test_videos/aruco.avi")
+cap = cv2.VideoCapture(0)
 robot = bot()
 
 # Wait for autofocus
@@ -82,6 +82,8 @@ def update_bot_localisation():
                   robot.y - int(100 * np.sin((angle+robot.bearing) * np.pi / 180))),
                  (0, 0, 0))
 
+        cv2.waitKey(10)
+
         cv2.imshow("frame", frame)
         if cv2.waitKey(1) & 0xFF == ord('a'):
             break
@@ -124,7 +126,7 @@ def test_camera():
 if __name__ == '__main__':
     pool = ThreadPoolExecutor(max_workers=2)
     pool.submit(update_bot_localisation)
-    # pool.submit(communicate_via_serial)
-    #pool.submit(test_camera)
+    pool.submit(communicate_via_serial)
+    # pool.submit(test_camera)
 
 
