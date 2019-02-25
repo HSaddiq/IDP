@@ -41,12 +41,12 @@ class Movement
   int angle_div()
   {
     val = analogRead(analogPin);  // read the input pin
-    if ((val <= 50) && (colour == 1)) 
+    if ((val <= 5) && (colour == 1)) 
     {
       colour = 0;
       divisions += 1;
     }
-    else if ((val > 70) && (colour == 0)) 
+    else if ((val > 10) && (colour == 0)) 
     {
       colour = 1;
       divisions += 1;
@@ -69,12 +69,12 @@ class Movement
       Serial.println("Moving backwards...");
       while (angle_div()+3 < divisions2)
       {
-        myMotor1->run(BACKWARD);
-        myMotor2->run(BACKWARD);
+        myMotor1->run(FORWARD);
+        myMotor2->run(FORWARD);
       }
       Serial.println("Braking...");
-      myMotor1->run(FORWARD);
-      myMotor2->run(FORWARD);
+      myMotor1->run(BACKWARD);
+      myMotor2->run(BACKWARD);
       delay(20);
       myMotor1->run(RELEASE);
       myMotor2->run(RELEASE);
@@ -86,12 +86,12 @@ class Movement
       while (angle_div()+3 < divisions2)
       {
         Serial.println(angle_div());
-        myMotor1->run(FORWARD);
-        myMotor2->run(FORWARD);
+        myMotor1->run(BACKWARD);
+        myMotor2->run(BACKWARD);
       }
       Serial.println("Braking...");
-      myMotor1->run(BACKWARD);
-      myMotor2->run(BACKWARD);
+      myMotor1->run(FORWARD);
+      myMotor2->run(FORWARD);
       delay(20);
       myMotor1->run(RELEASE);
       myMotor2->run(RELEASE);
@@ -108,7 +108,7 @@ class Movement
   {
     myMotor1->setSpeed(lvl);
     myMotor2->setSpeed(lvl);
-    int divisions2 = round((10*13*angle)/(36*5));
+    int divisions2 = round((10*18.25*angle)/(36*5));
 
     if (dir==0)
     {
@@ -151,7 +151,7 @@ class Movement
 
 void setup() {
   Movement mov;
-  mov.drive(1, 200, 170);
+  mov.drive(1, 200, 50);
   mov.turn(0, 200, 90);
   mov.drive(1, 200, 20);
   mov.turn(1, 200, 90);
