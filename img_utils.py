@@ -8,8 +8,8 @@ def find_box_coords(frame):
     # Returns a list of coordinate tuples having been given a frame of image //FRAME IN HSV
 
     # Define upper and lower blue HSV for finding the boxes
-    lower_blue = np.array([101, 0, 180])
-    upper_blue = np.array([105, 255, 255])
+    lower_blue = np.array([90, 70, 180])
+    upper_blue = np.array([110, 255, 255])
 
     # get a mask of all pixels that satisfy this constraint
     filtered_boxes = cv2.inRange(frame, lower_blue, upper_blue)
@@ -18,7 +18,7 @@ def find_box_coords(frame):
     gaussian = cv2.GaussianBlur(filtered_boxes, (5, 5), 3)
 
     # get contours of boxes within mask
-    thresh = cv2.threshold(gaussian, 50, 255, 0)[1]
+    thresh = cv2.threshold(gaussian, 100, 255, 0)[1]
     contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
     list_of_coords = []
@@ -51,7 +51,7 @@ def find_triangle(frame, lower_hue, upper_hue):
     gaussian = cv2.GaussianBlur(filtered_triangle, (5, 5), 0)
 
     # get contours of boxes within mask
-    thresh = cv2.threshold(gaussian, 150, 255, 0)[1]
+    thresh = cv2.threshold(gaussian, 100, 255, 0)[1]
     contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
     list_of_coords = []
 
@@ -70,3 +70,47 @@ def find_triangle(frame, lower_hue, upper_hue):
                 list_of_coords.append((xbar, ybar))
 
     return list_of_coords[0]
+
+# Testing suite
+if __name__ == '__main__':
+    cap = cv2.VideoCapture(0)
+    while True:
+        ret, frame = cap.read()
+        cv2.imshow("test",frame)
+        # Returns a list of coordinate tuples having been given a frame of image //FRAME IN HSV
+        first_frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        # Define upper and lower blue HSV for finding the boxes
+        lower_blue = np.array([90, 70, 180])
+        upper_blue = np.array([110, 255, 255])
+
+        # get a mask of all pixels that satisfy this constraint
+        filtered_boxes = cv2.inRange(first_frame_hsv, lower_blue, upper_blue)
+
+        # blurs the points together to try to reduce outliers
+        gaussian = cv2.GaussianBlur(filtered_boxes, (5, 5), 3)
+
+        # get contours of boxes within mask
+        thresh = cv2.threshold(gaussian, 100, 255, 0)[1]
+        cv2.imshow("thresh", thresh)
+        contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
+        list_of_coords = []
+
+        for c in contours:
+
+            # checks that each identified blob is large enough to be consideres a box
+            if (len(c) >= 5):
+                # get x and y coordinates of contour:
+                moments = cv2.moments(c)
+
+                # use equation in openCV documentation
+                if moments["m00"] != 0:
+                    xbar = int(moments["m10"] / moments["m00"])
+                    ybar = int(moments["m01"] / moments["m00"])
+
+                    # Print list of coords from current frame
+                    list_of_coords.append((xbar, ybar))
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+

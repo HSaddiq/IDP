@@ -67,14 +67,15 @@ def calculate_turn_angle(current_coord, next_coord, current_bearing):
 
 
 def get_angle(current_coords, next_coords, current_bearing):
-    desired_bearing = - np.arctan(
-        (next_coords[1] - current_coords[1]) / (next_coords[0] - current_coords[0])) * 180 / np.pi
+    desired_bearing = - np.arctan2(
+        (next_coords[1] - current_coords[1]), (next_coords[0] - current_coords[0])) * 180 / np.pi
 
     if current_bearing > desired_bearing:
         return 360 - current_bearing + desired_bearing
 
     else:
         return desired_bearing - current_bearing
+
 
 # test for getting list of coordinates in order from get_next_coord
 # for i in range(0, 5):

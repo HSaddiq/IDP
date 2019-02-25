@@ -51,15 +51,17 @@ def update_bot_localisation():
             top_left = corners[0][0][0]
             top_right = corners[0][0][1]
             midpoint_top = (top_left + top_right) / 2
-            robot.bearing = - np.arctan(
-                (midpoint_top[1] - average_point[1]) / (midpoint_top[0] - average_point[0])) * 180 / np.pi
+            robot.bearing = - np.arctan2(
+                (midpoint_top[1] - average_point[1]), (midpoint_top[0] - average_point[0])) * 180 / np.pi
             robot.bearing = (robot.bearing + 360) % 360
+        #
+        # #show all available boxes in white
+        for box in boxes:
+            cv2.circle(frame, (box.x, box.y), 2, (255, 255, 255), -1)
 
+        #show nearest available box in red
         nearest_box = utils.get_nearest_box(boxes, robot)
         cv2.circle(frame, (nearest_box.x, nearest_box.y), 2, (0, 0, 255), -1)
-
-
-
 
         # get nearest available box
         nearest_box = utils.get_nearest_box(boxes, robot)
@@ -78,8 +80,8 @@ def update_bot_localisation():
                  (0, 0, 0))
 
         cv2.line(frame, (robot.x, robot.y),
-                 (robot.x + int(100 * np.cos((angle+robot.bearing) * np.pi / 180)),
-                  robot.y - int(100 * np.sin((angle+robot.bearing) * np.pi / 180))),
+                 (robot.x + int(100 * np.cos((angle + robot.bearing) * np.pi / 180)),
+                  robot.y - int(100 * np.sin((angle + robot.bearing) * np.pi / 180))),
                  (0, 0, 0))
 
         cv2.waitKey(10)
@@ -111,16 +113,16 @@ def communicate_via_serial():
         # send angle to arduino via serial (0-360)1
         ser.write(str(str(angle) + "/n").encode("UTF-8"))
 
+
 def test_camera():
     print("test")
 
     while True:
-        ret,frame = cap.read()
-        cv2.imshow("test",frame)
+        ret, frame = cap.read()
+        cv2.imshow("test", frame)
         # Wait for 'a' key to stop the program
         if cv2.waitKey(1) & 0xFF == ord('a'):
             break
-
 
 
 if __name__ == '__main__':
@@ -128,5 +130,3 @@ if __name__ == '__main__':
     pool.submit(update_bot_localisation)
     pool.submit(communicate_via_serial)
     # pool.submit(test_camera)
-
-
