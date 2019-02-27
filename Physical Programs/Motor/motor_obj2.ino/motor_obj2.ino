@@ -16,8 +16,8 @@ class Movement
   int divisions;
   bool colour;
 
-  int lower_bound_for_high = 65;
-  int upper_bound_for_low = 25;
+  int lower_bound_for_high = 50;
+  int upper_bound_for_low = 30;
 
   //Default constructor for setting up the motors in instantiation of object
   Movement()
@@ -30,7 +30,7 @@ class Movement
 
     // Read the initial colour and record
     // (Throughout, 0 for black and 1 for white)
-    if (val <= lower_bound_for_high) {
+    if (val <= upper_bound_for_low) {
       colour = 0;
     }
     else {
@@ -79,17 +79,17 @@ class Movement
   int angle_div()
   {
     val = analogRead(analogPin);  // read the input pin
-    if ((val <= lower_bound_for_high) && (colour == 1)) 
+    Serial.println(val);
+    if ((val <= upper_bound_for_low) && (colour == 1)) 
     {
       colour = 0;
       divisions += 1;
     }
-    else if ((val > upper_bound_for_low) && (colour == 0)) 
+    else if ((val > lower_bound_for_high) && (colour == 0)) 
     {
       colour = 1;
       divisions += 1;
     }   
-    
     return divisions;
   }
   
@@ -144,9 +144,10 @@ class Movement
   //in a certain direction (dir is 0 for right and 1 for left)
   void turn(bool dir, int lvl, float angle)
   {
+    float r = 14;
     myMotor1->setSpeed(lvl);
     myMotor2->setSpeed(lvl);
-    int divisions2 = round((10*13*angle)/(36*5));
+    int divisions2 = round((10*r*angle)/(36*5));
     
     if (dir==0)
     {
@@ -155,7 +156,7 @@ class Movement
       Serial.print(angle);
       Serial.println();
       
-      while (angle_div()+3 < divisions2)
+      while (angle_div() < divisions2)
       {
         myMotor1->run(FORWARD);
         myMotor2->run(BACKWARD);
@@ -174,8 +175,9 @@ class Movement
       Serial.print("turning left...");
       Serial.print(angle);
       Serial.println();
-      
-      while (angle_div()+3 < divisions2)
+
+      //can add constant here if it is overturning eg angle_div() +3
+      while (angle_div() < divisions2)
       {
         myMotor1->run(BACKWARD);
         myMotor2->run(FORWARD);
