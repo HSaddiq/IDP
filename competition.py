@@ -86,6 +86,20 @@ def update_bot_localisation():
 
         cv2.waitKey(10)
 
+        # get nearest available box
+        nearest_box = utils.get_nearest_box(boxes, robot)
+        # get bearing to nearest available box
+        angle = utils.get_angle([robot.x, robot.y], [nearest_box.x, nearest_box.y], robot.bearing)
+
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        cv2.putText(frame, str(angle), (10, 200), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+
+        #Trying to find position of unloading for boxes
+        cv2.circle(frame, (200, 425), 10, (0, 255, 0), -1)
+
+        #trying to find position of end state
+        cv2.circle(frame, (230, 90), 10, (0, 0, 0), -1)
+
         cv2.imshow("frame", frame)
         if cv2.waitKey(1) & 0xFF == ord('a'):
             break
@@ -97,25 +111,24 @@ def communicate_via_serial():
     ser = serial.Serial()
 
     ser.baudrate = 9600
-    ser.port = "COM4"
+    ser.port = "COM8"
     ser.open()
 
     while True:
         arduino_string = ser.readline()
         print(arduino_string)
 
-        # get nearest available box
-        nearest_box = utils.get_nearest_box(boxes, robot)
-        # get bearing to nearest available box
-        angle = utils.get_angle([robot.x, robot.y], [nearest_box.x, nearest_box.y], robot.bearing)
-        print(angle)
+        if arduino_string == b'requesting bearing\r\n':
+            # get nearest available box
+            nearest_box = utils.get_nearest_box(boxes, robot)
+            # get bearing to nearest available box
+            angle = utils.get_angle([robot.x, robot.y], [nearest_box.x, nearest_box.y], robot.bearing)
 
-        # send angle to arduino via serial (0-360)1
-        ser.write(str(str(angle) + "/n").encode("UTF-8"))
+            # send angle to arduino via serial (0-360)1
+            ser.write(str(str(angle) + "/n").encode("UTF-8"))
 
 
 def test_camera():
-    print("test")
 
     while True:
         ret, frame = cap.read()
