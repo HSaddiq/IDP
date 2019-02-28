@@ -39,18 +39,18 @@ void loop(){
         current_bearing = bearing_value;
 
         //determines the direction of the turn based on the angle given
-        if (current_bearing < 180) 
+        if (bearing_value < 180) 
         {
           direction = 1; //LEFT
         }
         else
         {
           direction = 0; // RIGHT
-          current_bearing = 360 - current_bearing;
+          bearing_value = 360 - bearing_value;
         }
 
         //calls the rotate function with the given variables
-        rotate(direction, current_bearing);
+        rotate(direction, bearing_value);
     }
 }
 }
