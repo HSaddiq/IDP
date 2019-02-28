@@ -55,6 +55,7 @@ void setup() {
   previous_distance = 10000;
 }
 
+// Runs the motors until a distance of 10 cm is detected
 
 void loop() {
   Movement mov;
