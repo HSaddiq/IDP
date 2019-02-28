@@ -25,7 +25,7 @@ class Movement
   Movement()
   {
     Serial.begin(9600);           // set up Serial library at 9600 bps
-    //Serial.println("Setting up movement...");
+    Serial.println("Setting up movement...");
 
     AFMS.begin();  // create with the default frequency 1.6KHz
     val = analogRead(analogPin);  // read the input pin
@@ -115,7 +115,7 @@ class Movement
       Serial.println("Braking...");
       myMotor1->run(FORWARD);
       myMotor2->run(FORWARD);
-      delay(20);
+      delay(30);
       myMotor1->run(RELEASE);
       myMotor2->run(RELEASE);
     }
@@ -132,7 +132,7 @@ class Movement
       Serial.println("Braking...");
       myMotor1->run(BACKWARD);
       myMotor2->run(BACKWARD);
-      delay(20);
+      delay(30);
       myMotor1->run(RELEASE);
       myMotor2->run(RELEASE);
       goto end_drive;
@@ -156,9 +156,10 @@ class Movement
       divisions = 0;
       Serial.print("turning right...");
       Serial.print(angle);
-      //Serial.println();
+      Serial.println();
       
-      while (angle_div() < divisions2)
+	  //can add constant here if it is overturning eg angle_div() +3
+      while (angle_div()+3 < divisions2)
       {
         myMotor1->run(FORWARD);
         myMotor2->run(BACKWARD);
@@ -176,10 +177,10 @@ class Movement
       divisions = 0;
       Serial.print("turning left...");
       Serial.print(angle);
-      //Serial.println();
+      Serial.println();
 
       //can add constant here if it is overturning eg angle_div() +3
-      while (angle_div() < divisions2)
+      while (angle_div()+3 < divisions2)
       {
         myMotor1->run(BACKWARD);
         myMotor2->run(FORWARD);
@@ -198,20 +199,22 @@ class Movement
 
   void continuous_drive(int lvl)
   {
+	Serial.println("continuous drive");
     myMotor1->setSpeed(lvl);
     myMotor2->setSpeed(lvl);
 
-    myMotor1->run(FORWARD);
-    myMotor2->run(FORWARD);
+    myMotor1->run(BACKWARD);
+    myMotor2->run(BACKWARD);
     
   }
 
   //brake is used with conditioned_drive to stop the  robot when a conditon is met
   void brake()
   {
-      myMotor1->run(BACKWARD);
-      myMotor2->run(BACKWARD);
-      delay(20);
+	  Serial.println("braking");
+      myMotor1->run(FORWARD);
+      myMotor2->run(FORWARD);
+      delay(30);
       myMotor1->run(RELEASE);
       myMotor2->run(RELEASE);
   }
