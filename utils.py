@@ -97,3 +97,26 @@ def get_nearest_box(boxes, robot):
     # for i in available_boxes:
     #     print([i.x, i.y])
     return available_boxes[0]
+
+
+def get_nearest_box_with_removal(boxes, robot):
+    # take a list of boxes, filtered for those available, returns box and updated list of boxes
+    def distance_to_robot(box):
+        return ((box.x - robot.x) ** 2 + (box.y - robot.y) ** 2) ** 0.5
+
+    available_boxes = [box for box in boxes if box.available]
+
+    available_boxes = sorted(available_boxes, key=distance_to_robot)
+    # for i in available_boxes:
+    #     print([i.x, i.y])
+    nearest_box = available_boxes[0]
+    updated_box = nearest_box
+    updated_box.available = False
+
+    boxes[boxes.index(nearest_box)] = updated_box
+
+    return boxes, nearest_box
+
+
+if __name__ == '__main__':
+    boxes = [box]

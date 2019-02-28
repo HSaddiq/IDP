@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 import numpy as np
 import serial
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture("test_videos/aruco.avi")
 robot = bot()
 
 # Wait for autofocus
@@ -33,7 +33,6 @@ for i in box_coords:
 
 # Step 2 - In 1 thread, continously update the location and bearing of bot
 def update_bot_localisation():
-    print("test")
     while True:
         # capture frame-by-frame
         ret, frame = cap.read()
@@ -55,13 +54,17 @@ def update_bot_localisation():
                 (midpoint_top[1] - average_point[1]), (midpoint_top[0] - average_point[0])) * 180 / np.pi
             robot.bearing = (robot.bearing + 360) % 360
         #
-        # #show all available boxes in white
+        # #show all available boxes in white and completed boxes in red
         for box in boxes:
-            cv2.circle(frame, (box.x, box.y), 2, (255, 255, 255), -1)
+            if box.available:
+                cv2.circle(frame, (box.x, box.y), 2, (255, 255, 255), -1)
 
-        #show nearest available box in red
+            else:
+                cv2.circle(frame, (box.x, box.y), 2, (0, 0, 255), -1)
+
+        # show nearest available box in green
         nearest_box = utils.get_nearest_box(boxes, robot)
-        cv2.circle(frame, (nearest_box.x, nearest_box.y), 2, (0, 0, 255), -1)
+        cv2.circle(frame, (nearest_box.x, nearest_box.y), 2, (0, 200, 0), -1)
 
         # get nearest available box
         nearest_box = utils.get_nearest_box(boxes, robot)
@@ -94,10 +97,10 @@ def update_bot_localisation():
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(frame, str(angle), (10, 200), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-        #Trying to find position of unloading for boxes
+        # Trying to find position of unloading for boxes
         cv2.circle(frame, (200, 425), 10, (0, 255, 0), -1)
 
-        #trying to find position of end state
+        # trying to find position of end state
         cv2.circle(frame, (230, 90), 10, (0, 0, 0), -1)
 
         cv2.imshow("frame", frame)
@@ -119,8 +122,9 @@ def communicate_via_serial():
         print(arduino_string)
 
         if arduino_string == b'requesting bearing\r\n':
-            # get nearest available box
-            nearest_box = utils.get_nearest_box(boxes, robot)
+            # get nearest available box and mark as unavailable
+            global boxes
+            boxes, nearest_box = utils.get_nearest_box_with_removal(boxes, robot)
             # get bearing to nearest available box
             angle = utils.get_angle([robot.x, robot.y], [nearest_box.x, nearest_box.y], robot.bearing)
 
@@ -129,7 +133,6 @@ def communicate_via_serial():
 
 
 def test_camera():
-
     while True:
         ret, frame = cap.read()
         cv2.imshow("test", frame)
@@ -137,9 +140,7 @@ def test_camera():
         if cv2.waitKey(1) & 0xFF == ord('a'):
             break
 
-
 if __name__ == '__main__':
     pool = ThreadPoolExecutor(max_workers=2)
     pool.submit(update_bot_localisation)
     pool.submit(communicate_via_serial)
-    # pool.submit(test_camera)
