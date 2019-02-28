@@ -25,7 +25,7 @@ class Movement
   Movement()
   {
     Serial.begin(9600);           // set up Serial library at 9600 bps
-    Serial.println("Setting up movement...");
+    //Serial.println("Setting up movement...");
 
     AFMS.begin();  // create with the default frequency 1.6KHz
     val = analogRead(analogPin);  // read the input pin
@@ -156,7 +156,7 @@ class Movement
       divisions = 0;
       Serial.print("turning right...");
       Serial.print(angle);
-      Serial.println();
+      //Serial.println();
       
       while (angle_div() < divisions2)
       {
@@ -176,7 +176,7 @@ class Movement
       divisions = 0;
       Serial.print("turning left...");
       Serial.print(angle);
-      Serial.println();
+      //Serial.println();
 
       //can add constant here if it is overturning eg angle_div() +3
       while (angle_div() < divisions2)
