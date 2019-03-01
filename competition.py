@@ -13,22 +13,6 @@ from concurrent.futures import ThreadPoolExecutor, Future
 import numpy as np
 import serial
 
-cap = cv2.VideoCapture("test_videos/aruco.avi")
-robot = bot()
-
-# Wait for autofocus
-# time.sleep(5)
-
-
-# Step 1 - get location of boxes:
-ret, first_frame = cap.read()
-
-first_frame_hsv = cv2.cvtColor(first_frame, cv2.COLOR_BGR2HSV)
-box_coords = img_utils.find_box_coords(first_frame_hsv)
-
-boxes = []
-for i in box_coords:
-    boxes.append(box(i[0], i[1], True))
 
 
 # Step 2 - In 1 thread, continously update the location and bearing of bot
@@ -111,6 +95,8 @@ def update_bot_localisation():
 # Step 3 In 2nd thread, when serial read asks for next angle, calculate angle
 
 def communicate_via_serial():
+    time.sleep(3)
+
     ser = serial.Serial()
 
     ser.baudrate = 9600
@@ -140,7 +126,26 @@ def test_camera():
         if cv2.waitKey(1) & 0xFF == ord('a'):
             break
 
+
 if __name__ == '__main__':
+    cap = cv2.VideoCapture(0)
+    robot = bot()
+
+    # Wait for autofocus
+    # time.sleep(5)
+
+    # Step 1 - get location of boxes:
+    ret, first_frame = cap.read()
+
+    first_frame_hsv = cv2.cvtColor(first_frame, cv2.COLOR_BGR2HSV)
+    box_coords = img_utils.find_box_coords(first_frame_hsv)
+
+    boxes = []
+    for i in box_coords:
+        boxes.append(box(i[0], i[1], True))
+
+    print("Boxes Found: {}".format(len(boxes)))
+
     pool = ThreadPoolExecutor(max_workers=2)
     pool.submit(update_bot_localisation)
     pool.submit(communicate_via_serial)
