@@ -8,8 +8,8 @@ def find_box_coords(frame):
     # Returns a list of coordinate tuples having been given a frame of image //FRAME IN HSV
 
     # Define upper and lower blue HSV for finding the boxes
-    lower_blue = np.array([90, 70, 180])
-    upper_blue = np.array([110, 255, 255])
+    lower_blue = np.array([80, 60, 160])
+    upper_blue = np.array([120, 255, 255])
 
     # get a mask of all pixels that satisfy this constraint
     filtered_boxes = cv2.inRange(frame, lower_blue, upper_blue)
@@ -80,8 +80,8 @@ if __name__ == '__main__':
         # Returns a list of coordinate tuples having been given a frame of image //FRAME IN HSV
         first_frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # Define upper and lower blue HSV for finding the boxes
-        lower_blue = np.array([90, 70, 180])
-        upper_blue = np.array([110, 255, 255])
+        lower_blue = np.array([80, 60, 160])
+        upper_blue = np.array([120, 255, 255])
 
         # get a mask of all pixels that satisfy this constraint
         filtered_boxes = cv2.inRange(first_frame_hsv, lower_blue, upper_blue)
