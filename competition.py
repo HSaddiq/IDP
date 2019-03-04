@@ -14,7 +14,6 @@ import numpy as np
 import serial
 
 
-
 # Step 2 - In 1 thread, continously update the location and bearing of bot
 def update_bot_localisation():
     while True:
@@ -41,51 +40,44 @@ def update_bot_localisation():
         # #show all available boxes in white and completed boxes in red
         for box in boxes:
             if box.available:
-                cv2.circle(frame, (box.x, box.y), 2, (255, 255, 255), -1)
+                cv2.circle(frame, (box.x, box.y), 6, (255, 255, 255), 1)
 
             else:
-                cv2.circle(frame, (box.x, box.y), 2, (0, 0, 255), -1)
+                cv2.circle(frame, (box.x, box.y), 6, (0, 0, 255), 1)
+
+        cv2.line(frame, (robot.x, robot.y),
+                 (robot.x + int(100 * np.cos(robot.bearing * np.pi / 180)),
+                  robot.y - int(100 * np.sin(robot.bearing * np.pi / 180))),
+                 (0, 0, 0))
 
         # show nearest available box in green
         nearest_box = utils.get_nearest_box(boxes, robot)
-        cv2.circle(frame, (nearest_box.x, nearest_box.y), 2, (0, 200, 0), -1)
+        cv2.circle(frame, (nearest_box.x, nearest_box.y), 6, (0, 200, 0), 1)
 
-        # get nearest available box
-        nearest_box = utils.get_nearest_box(boxes, robot)
         # get bearing to nearest available box
+        # try as all boxes may be found
 
-        cv2.line(frame, (robot.x, robot.y),
-                 (robot.x + int(100 * np.cos(robot.bearing * np.pi / 180)),
-                  robot.y - int(100 * np.sin(robot.bearing * np.pi / 180))),
-                 (0, 0, 0))
+        try:
+            angle = utils.get_angle([robot.x, robot.y], [nearest_box.x, nearest_box.y], robot.bearing)
 
-        angle = utils.get_angle([robot.x, robot.y], [nearest_box.x, nearest_box.y], robot.bearing)
+            cv2.line(frame, (robot.x, robot.y),
+                     (robot.x + int(100 * np.cos((angle + robot.bearing) * np.pi / 180)),
+                      robot.y - int(100 * np.sin((angle + robot.bearing) * np.pi / 180))),
+                     (0, 0, 0))
 
-        cv2.line(frame, (robot.x, robot.y),
-                 (robot.x + int(100 * np.cos(robot.bearing * np.pi / 180)),
-                  robot.y - int(100 * np.sin(robot.bearing * np.pi / 180))),
-                 (0, 0, 0))
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(frame, str(angle), (10, 200), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-        cv2.line(frame, (robot.x, robot.y),
-                 (robot.x + int(100 * np.cos((angle + robot.bearing) * np.pi / 180)),
-                  robot.y - int(100 * np.sin((angle + robot.bearing) * np.pi / 180))),
-                 (0, 0, 0))
+        except:
+            pass
 
         cv2.waitKey(10)
 
-        # get nearest available box
-        nearest_box = utils.get_nearest_box(boxes, robot)
-        # get bearing to nearest available box
-        angle = utils.get_angle([robot.x, robot.y], [nearest_box.x, nearest_box.y], robot.bearing)
-
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(frame, str(angle), (10, 200), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
-
         # Trying to find position of unloading for boxes
-        cv2.circle(frame, (200, 425), 10, (0, 255, 0), -1)
+        cv2.circle(frame, (50, 285), 10, (0, 255, 0), -1)
 
         # trying to find position of end state
-        cv2.circle(frame, (230, 90), 10, (0, 0, 0), -1)
+        cv2.circle(frame, (48, 60), 10, (0, 0, 0), -1)
 
         cv2.imshow("frame", frame)
         if cv2.waitKey(1) & 0xFF == ord('a'):
@@ -96,6 +88,7 @@ def update_bot_localisation():
 
 def communicate_via_serial():
     time.sleep(3)
+    global boxes
 
     ser = serial.Serial()
 
@@ -108,14 +101,52 @@ def communicate_via_serial():
         print(arduino_string)
 
         if arduino_string == b'requesting bearing\r\n':
+            # if all boxes taken, send an angle of 5000 to indicate that end sequence must run
+            if all([box.available is False for box in boxes]):
+                ser.write(str(str(300) + "/n").encode("UTF-8"))
+                #
+                #
+                # # check if arduino received end sequence code
+                # arduino_string = ser.readline()
+                #
+                # if arduino_string == b'end code received\r\n':
+                #     position_of_first_end_point = []
+                #     angle_to_first_end_point = utils.get_angle([robot.x, robot.y], position_of_first_end_point,
+                #                                                robot.bearing)
+                #
+                #     if angle_to_first_end_point < 0:
+                #         angle_to_first_end_point = 360 + angle_to_first_end_point
+                #
+                #     # send angle to arduino via serial (0-360)1
+                #     ser.write(str(str(angle_to_first_end_point) + "/n").encode("UTF-8"))
+                #
+                # arduino_string = ser.readline()
+                #
+                # position_of_second_end_point = []
+                # angle_to_second_end_point = utils.get_angle([robot.x, robot.y], position_of_second_end_point,
+                #                                             robot.bearing)
+                #
+                # if angle_to_second_end_point < 0:
+                #     angle_to_second_end_point = 360 + angle_to_second_end_point
+                #
+                # # send angle to arduino via serial (0-360)
+                # ser.write(str(str(angle_to_second_end_point) + "/n").encode("UTF-8"))
+
             # get nearest available box and mark as unavailable
-            global boxes
-            boxes, nearest_box = utils.get_nearest_box_with_removal(boxes, robot)
+            nearest_box = utils.get_nearest_box(boxes, robot)
             # get bearing to nearest available box
             angle = utils.get_angle([robot.x, robot.y], [nearest_box.x, nearest_box.y], robot.bearing)
 
+            if angle < 0:
+                angle = 360 + angle
+
             # send angle to arduino via serial (0-360)1
             ser.write(str(str(angle) + "/n").encode("UTF-8"))
+
+        if arduino_string == b'processed box\r\n':
+            # arduino got box - mark processed box as removed
+
+            boxes, nearest_box = utils.get_nearest_box_with_removal(boxes, robot)
 
 
 def test_camera():
