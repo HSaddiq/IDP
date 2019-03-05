@@ -13,13 +13,13 @@ class Movement
   // Select which 'port' M1, M2, M3 or M4. In this case, M1
   Adafruit_DCMotor *myMotor1 = AFMS.getMotor(1);
   Adafruit_DCMotor *myMotor2 = AFMS.getMotor(2);
-  int analogPin = A3; // potentiometer wiper (middle terminal) connected to analog pin 3
+  int analogPin = A3;  // potentiometer wiper (middle terminal) connected to analog pin 3
   int val = 0;  // variable to store the value read
   int divisions;
   bool colour;
 
-  int lower_bound_for_high = 50;
-  int upper_bound_for_low = 30;
+  int lower_bound_for_high = 70;  //the minimum value mesaured by encoder to be considered a high reading
+  int upper_bound_for_low = 50;  //the maximum value mesaured by encoder to be considered a low reading
 
   //Default constructor for setting up the motors in instantiation of object
   Movement()
@@ -40,6 +40,19 @@ class Movement
     }
   }
 
+/***********************************************************************************************************************************/  
+  void test_dumper()
+  {
+	  myMotor1->setSpeed(255);
+	  myMotor2->setSpeed(255);
+	  myMotor1->run(FORWARD);
+	  myMotor2->run(FORWARD);
+	  delay(1500);
+	  myMotor1->run(RELEASE);
+	  myMotor2->run(RELEASE);
+  }
+  
+/***********************************************************************************************************************************/
   //If the physical setup of the robot changes, run get_threshold to calculate new bounds
   //for the encoder thresholding. This can either automatically update the values, or a print-out can
   //be viewed and the boundaries changed at the discretion of the user
@@ -76,12 +89,13 @@ class Movement
 
   }
 
+/***********************************************************************************************************************************/
   //angle_div() will read the angle travelled by the wheel.  Returns number of divisions travelled
   //Used in drive and turn
   int angle_div()
   {
     val = analogRead(analogPin);  // read the input pin
-    Serial.println(val);
+    //Serial.println(val);
     if ((val <= upper_bound_for_low) && (colour == 1)) 
     {
       colour = 0;
@@ -94,9 +108,12 @@ class Movement
     }   
     return divisions;
   }
+
+/***********************************************************************************************************************************/  
+  //drive will move the robot forwards or backwards with a chosen direction (0 - forwards, 1 - backwards),
+  //at a certain speed (lvl which ranges from 0 to 255) and for a certain distance (CM).
+  //system 'quirk' -> to move forwards, motor set BACKWARD
   
-  //drive will move the robot forwards or backwards with a chosen direction (0 - backwards, 1 - forwards),
-  //at a certain speed (lvl which ranges from 0 to 255) and for a certain duration (dur in seconds).
   void drive(bool dir, int lvl, float distance)
   {
     myMotor1->setSpeed(lvl);
@@ -106,13 +123,14 @@ class Movement
     if(dir==0)
     {
       divisions = 0;
-      Serial.println("Moving backwards...");
+      Serial.println("Moving forwards...");
       while (angle_div()+3 < divisions2)
       {
         myMotor1->run(BACKWARD);
         myMotor2->run(BACKWARD);
       }
       Serial.println("Braking...");
+	  Serial.println(distance);
       myMotor1->run(FORWARD);
       myMotor2->run(FORWARD);
       delay(30);
@@ -122,7 +140,7 @@ class Movement
     else
     {
       divisions = 0;
-      Serial.println("Moving forwards...");
+      Serial.println("Moving backwards...");
       while (angle_div()+3 < divisions2)
       {
         //Serial.println(angle_div());
@@ -130,6 +148,7 @@ class Movement
         myMotor2->run(FORWARD);
       }
       Serial.println("Braking...");
+	  Serial.println(distance);
       myMotor1->run(BACKWARD);
       myMotor2->run(BACKWARD);
       delay(30);
@@ -141,6 +160,7 @@ class Movement
         Serial.println("end driving...");
   }
 
+/***********************************************************************************************************************************/
   //turn() will rotate the robot on the spot a specified angle (in degrees)
   //at a certain level (lvl is an int between 0-255)
   //in a certain direction (dir is 0 for right and 1 for left)
@@ -159,7 +179,7 @@ class Movement
       Serial.println();
       
 	  //can add constant here if it is overturning eg angle_div() +3
-      while (angle_div()+3 < divisions2)
+      while (angle_div() < divisions2)
       {
         myMotor1->run(FORWARD);
         myMotor2->run(BACKWARD);
@@ -180,7 +200,7 @@ class Movement
       Serial.println();
 
       //can add constant here if it is overturning eg angle_div() +3
-      while (angle_div()+3 < divisions2)
+      while (angle_div() < divisions2)
       {
         myMotor1->run(BACKWARD);
         myMotor2->run(FORWARD);
@@ -196,7 +216,10 @@ class Movement
       end_turn:
         Serial.println("end turning...");
     }
-
+	
+/***********************************************************************************************************************************/  
+  //this tells motors to run continuously until it is given a further instruction (ie brake)
+  //again follows the system 'quirk' -> to move forwards, motor set BACKWARD
   void continuous_drive(int lvl)
   {
 	Serial.println("continuous drive");
@@ -207,7 +230,8 @@ class Movement
     myMotor2->run(BACKWARD);
     
   }
-
+  
+/***********************************************************************************************************************************/
   //brake is used with conditioned_drive to stop the  robot when a conditon is met
   void brake()
   {
