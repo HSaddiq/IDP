@@ -77,6 +77,16 @@ def get_angle(current_coords, next_coords, current_bearing):
         return desired_bearing - current_bearing
 
 
+# get distance measurement between two coordinates - returns in integer centimetres
+def get_distance(current_coords, next_coords):
+    # get conversion between pixels and distance cm / pixel
+    pixel_conversion = 99.7 / 235
+
+    pixel_distance = ((current_coords[0] - next_coords[0]) ** 2 + (current_coords[1] - next_coords[1]) ** 2) ** 0.5
+
+    return int(round(pixel_distance * pixel_conversion))
+
+
 # test for getting list of coordinates in order from get_next_coord
 # for i in range(0, 5):
 #     current_coord = get_next_coord(list_of_coords, current_coord)
@@ -119,4 +129,7 @@ def get_nearest_box_with_removal(boxes, robot):
 
 
 if __name__ == '__main__':
-    boxes = [box]
+    test_coords_1 = [0, 0]
+    test_coords_2 = [0, 100]
+
+    print(get_distance(test_coords_1, test_coords_2))

@@ -103,26 +103,33 @@ def communicate_via_serial():
         if arduino_string == b'requesting bearing\r\n':
             # if all boxes taken, send an angle of 5000 to indicate that end sequence must run
             if all([box.available is False for box in boxes]):
-                ser.write(str(str(300) + "/n").encode("UTF-8"))
+                ser.write(str(str(5000) + "/n").encode("UTF-8"))
+
+                #check if arduino received end sequence code
+                arduino_string = ser.readline()
+
+                position_of_first_end_point = [50, 420]
+                angle_to_first_end_point = utils.get_angle([robot.x, robot.y], position_of_first_end_point,
+                                                           robot.bearing)
+
+                if angle_to_first_end_point < 0:
+                    angle_to_first_end_point = 360 + angle_to_first_end_point
+
+                # send angle to arduino via serial (0-360)1
+                ser.write(str(str(angle_to_first_end_point) + "/n").encode("UTF-8"))
+
+                # wait for response
+                arduino_string = ser.readline()
+
+                # send arduino distance measurement
+                distance_to_nearest_end_point = utils.get_distance([robot.x, robot.y], position_of_first_end_point)
+                ser.write(str(str(distance_to_nearest_end_point) + "/n").encode("UTF-8"))
+                print("needs to travel {} centimetres".format(distance_to_nearest_end_point))
                 #
-                #
-                # # check if arduino received end sequence code
+                # #wait for response
                 # arduino_string = ser.readline()
                 #
-                # if arduino_string == b'end code received\r\n':
-                #     position_of_first_end_point = []
-                #     angle_to_first_end_point = utils.get_angle([robot.x, robot.y], position_of_first_end_point,
-                #                                                robot.bearing)
-                #
-                #     if angle_to_first_end_point < 0:
-                #         angle_to_first_end_point = 360 + angle_to_first_end_point
-                #
-                #     # send angle to arduino via serial (0-360)1
-                #     ser.write(str(str(angle_to_first_end_point) + "/n").encode("UTF-8"))
-                #
-                # arduino_string = ser.readline()
-                #
-                # position_of_second_end_point = []
+                # position_of_second_end_point = [50, 285]
                 # angle_to_second_end_point = utils.get_angle([robot.x, robot.y], position_of_second_end_point,
                 #                                             robot.bearing)
                 #
@@ -131,6 +138,7 @@ def communicate_via_serial():
                 #
                 # # send angle to arduino via serial (0-360)
                 # ser.write(str(str(angle_to_second_end_point) + "/n").encode("UTF-8"))
+                # break
 
             # get nearest available box and mark as unavailable
             nearest_box = utils.get_nearest_box(boxes, robot)

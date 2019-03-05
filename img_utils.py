@@ -36,7 +36,7 @@ def find_box_coords(frame):
                 ybar = int(moments["m01"] / moments["m00"])
 
                 # Print list of coords from current frame
-                if ybar > 90 and ybar < 450 and xbar < 500:
+                if ybar > 90 and ybar < 450 and xbar < 500 and xbar > 270:
                     list_of_coords.append((xbar, ybar))
 
     return (list_of_coords)
@@ -72,12 +72,13 @@ def find_triangle(frame, lower_hue, upper_hue):
 
     return list_of_coords[0]
 
+
 # Testing suite
 if __name__ == '__main__':
     cap = cv2.VideoCapture(0)
     while True:
         ret, frame = cap.read()
-        cv2.imshow("test",frame)
+        cv2.imshow("test", frame)
         # Returns a list of coordinate tuples having been given a frame of image //FRAME IN HSV
         first_frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         # Define upper and lower blue HSV for finding the boxes
@@ -114,4 +115,3 @@ if __name__ == '__main__':
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-
