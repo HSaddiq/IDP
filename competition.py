@@ -38,26 +38,32 @@ def update_bot_localisation():
             robot.bearing = (robot.bearing + 360) % 360
         #
         # #show all available boxes in white and completed boxes in red
-        for box in boxes:
-            if box.available:
-                cv2.circle(frame, (box.x, box.y), 6, (255, 255, 255), 1)
+        # Try except loop as some boxes might not be found
 
-            else:
-                cv2.circle(frame, (box.x, box.y), 6, (0, 0, 255), 1)
+        try:
+            for box in boxes:
+                if box.available:
+                    cv2.circle(frame, (box.x, box.y), 6, (255, 255, 255), 1)
+
+                else:
+                    cv2.circle(frame, (box.x, box.y), 6, (0, 0, 255), 1)
+
+        except:
+            pass
 
         cv2.line(frame, (robot.x, robot.y),
                  (robot.x + int(100 * np.cos(robot.bearing * np.pi / 180)),
                   robot.y - int(100 * np.sin(robot.bearing * np.pi / 180))),
                  (0, 0, 0))
 
-        # show nearest available box in green
-        nearest_box = utils.get_nearest_box(boxes, robot)
-        cv2.circle(frame, (nearest_box.x, nearest_box.y), 6, (0, 200, 0), 1)
-
         # get bearing to nearest available box
         # try as all boxes may be found
 
         try:
+            # show nearest available box in green
+            nearest_box = utils.get_nearest_box(boxes, robot)
+            cv2.circle(frame, (nearest_box.x, nearest_box.y), 6, (0, 200, 0), 1)
+
             angle = utils.get_angle([robot.x, robot.y], [nearest_box.x, nearest_box.y], robot.bearing)
 
             cv2.line(frame, (robot.x, robot.y),
@@ -74,7 +80,7 @@ def update_bot_localisation():
         cv2.waitKey(10)
 
         # Trying to find position of unloading for boxes
-        cv2.circle(frame, (50, 285), 10, (0, 255, 0), -1)
+        cv2.circle(frame, (0, 285), 10, (0, 255, 0), -1)
 
         # trying to find position of end state
         cv2.circle(frame, (48, 60), 10, (0, 0, 0), -1)
@@ -102,29 +108,46 @@ def communicate_via_serial():
 
         if arduino_string == b'requesting bearing\r\n':
             # if all boxes taken, send an angle of 5000 to indicate that end sequence must run
-            if all([box.available is False for box in boxes]):
+            if all([box.available is False for box in boxes]) or boxes is None:
                 ser.write(str(str(5000) + "/n").encode("UTF-8"))
 
-                #check if arduino received end sequence code
+                # check if arduino received end sequence code
                 arduino_string = ser.readline()
+                print(arduino_string)
 
-                position_of_first_end_point = [50, 420]
-                angle_to_first_end_point = utils.get_angle([robot.x, robot.y], position_of_first_end_point,
-                                                           robot.bearing)
+                # code for driving into the unloading stage
+                unloading_position = [0, 285]
 
-                if angle_to_first_end_point < 0:
-                    angle_to_first_end_point = 360 + angle_to_first_end_point
+                angle_to_unloading = utils.get_angle([robot.x, robot.y], unloading_position,
+                                                     robot.bearing)
+
+                if angle_to_unloading < 0:
+                    angle_to_unloading = 360 + angle_to_unloading
+
+                print("sending {}".format(angle_to_unloading))
 
                 # send angle to arduino via serial (0-360)1
-                ser.write(str(str(angle_to_first_end_point) + "/n").encode("UTF-8"))
+                ser.write(str(str(angle_to_unloading) + "/n").encode("UTF-8"))
 
-                # wait for response
-                arduino_string = ser.readline()
+                # code for going to a point to the side of the end location aligning to end point
 
-                # send arduino distance measurement
-                distance_to_nearest_end_point = utils.get_distance([robot.x, robot.y], position_of_first_end_point)
-                ser.write(str(str(distance_to_nearest_end_point) + "/n").encode("UTF-8"))
-                print("needs to travel {} centimetres".format(distance_to_nearest_end_point))
+                # position_of_first_end_point = [50, 420]
+                # angle_to_first_end_point = utils.get_angle([robot.x, robot.y], position_of_first_end_point,
+                #                                            robot.bearing)
+                #
+                # if angle_to_first_end_point < 0:
+                #     angle_to_first_end_point = 360 + angle_to_first_end_point
+                #
+                # # send angle to arduino via serial (0-360)1
+                # ser.write(str(str(angle_to_first_end_point) + "/n").encode("UTF-8"))
+                #
+                # # wait for response
+                # arduino_string = ser.readline()
+                #
+                # # send arduino distance measurement
+                # distance_to_nearest_end_point = utils.get_distance([robot.x, robot.y], position_of_first_end_point)
+                # ser.write(str(str(distance_to_nearest_end_point) + "/n").encode("UTF-8"))
+                # print("needs to travel {} centimetres".format(distance_to_nearest_end_point))
                 #
                 # #wait for response
                 # arduino_string = ser.readline()
@@ -138,7 +161,6 @@ def communicate_via_serial():
                 #
                 # # send angle to arduino via serial (0-360)
                 # ser.write(str(str(angle_to_second_end_point) + "/n").encode("UTF-8"))
-                # break
 
             # get nearest available box and mark as unavailable
             nearest_box = utils.get_nearest_box(boxes, robot)
