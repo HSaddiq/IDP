@@ -18,8 +18,8 @@ class Movement
   int divisions;
   bool colour;
 
-  int lower_bound_for_high = 70;  //the minimum value mesaured by encoder to be considered a high reading
-  int upper_bound_for_low = 50;  //the maximum value mesaured by encoder to be considered a low reading
+  int lower_bound_for_high = 60;  //the minimum value mesaured by encoder to be considered a high reading
+  int upper_bound_for_low = 45;  //the maximum value mesaured by encoder to be considered a low reading
 
   //Default constructor for setting up the motors in instantiation of object
   Movement()
@@ -126,6 +126,7 @@ class Movement
       Serial.println("Moving forwards...");
       while (angle_div()+3 < divisions2)
       {
+		  Serial.println("in loop");
         myMotor1->run(BACKWARD);
         myMotor2->run(BACKWARD);
       }

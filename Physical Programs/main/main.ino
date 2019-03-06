@@ -32,7 +32,7 @@ void turn(int direction, int bearing){
 
 /***********************************************************************************************************************************/
 //1 for continuous, 0 for given distance
-void drive(bool continuous, int speed = 200, int distance = 0, int direction = 0) {
+void drive(bool continuous, int direction = 0, int speed = 200, int distance = 0) {
   Movement mov;
   
   bool sensor_tripped = false;
@@ -66,12 +66,12 @@ void initial_sweep(){
   
   Serial.println("conducting initial sweep");
   
-  drive(0, 0, 180);
+  drive(0, 0, 200, 180);
   turn(0, 92);
 
   //this checks if the robot is close enough to the wall every 30cm and makes small angle adjustments accordingly
   for(int i = 0; i < 5; i++){
-    drive(0, 0, 30);
+    drive(0, 0, 200, 30);
     sonic_read = ultrasonic.read(CM);
 
     if(sonic_read > 5){
@@ -83,13 +83,13 @@ void initial_sweep(){
     
   }
   
-  drive(0, 0, 30);
+  drive(0, 0, 200, 30);
   turn(1, 90);
-  drive(0, 1, 20);
+  drive(0, 1, 200, 20);
   turn(0,179);
-  drive(0, 0, 80);
+  drive(0, 0, 200, 80);
   turn(1,90);
-  drive(0, 1, 30);
+  drive(0, 1, 200, 30);
   turn(0, 179);
      
 }
@@ -107,8 +107,8 @@ void setup() {
   distance_string = "";
   distance_value = 0;
 
-  infra_pin = 11;
-  pinMode(infra_pin, INPUT);
+  //infra_pin = 11;
+  //pinMode(infra_pin, INPUT);
 
   infra_val = 0;
  
@@ -156,7 +156,10 @@ void loop(){
     //if it is the final procedure then we are heading for the shelf and want to overrun the motors to square up
     //the speed is also set slightly lower to avoid damage ocurring during the deliberate crash
     if(final_procedure){
-      drive(0, 150, 300);
+      drive(0, 0, 150, 250);
+      drive(0, 1, 150, 12);
+      turn(0,90);
+      drive(0, 0, 200, 60);
       final_procedure = false;
     }
     //otherwise just drive until the infrared sensor is tripped
