@@ -13,14 +13,35 @@ class Movement
   // Select which 'port' M1, M2, M3 or M4. In this case, M1
   Adafruit_DCMotor *myMotor1 = AFMS.getMotor(1);
   Adafruit_DCMotor *myMotor2 = AFMS.getMotor(2);
+  
+  //Add servo for pusher
+  
+  
+  // Define flipper motors
+  Adafruit_DCMotor *myMotor3 = AFMS.getMotor(3);
+  Adafruit_DCMotor *myMotor4 = AFMS.getMotor(4);
+  
+  
   int analogPin = A3;  // potentiometer wiper (middle terminal) connected to analog pin 3
   int val = 0;  // variable to store the value read
   int divisions;
   bool colour;
 
-  int lower_bound_for_high = 60;  //the minimum value mesaured by encoder to be considered a high reading
-  int upper_bound_for_low = 45;  //the maximum value mesaured by encoder to be considered a low reading
+  int lower_bound_for_high = 25;  //the minimum value mesaured by encoder to be considered a high reading
+  int upper_bound_for_low = 20;  //the maximum value mesaured by encoder to be considered a low reading
 
+  int infra_pin;
+  int infra_val;
+
+  int hall_1_pin;
+  int hall_2_pin;
+  int hall_1_val;
+  int hall_2_val;
+  
+  int LED_flash_pin;
+  
+  bool sensor_tripped = false;
+  
   //Default constructor for setting up the motors in instantiation of object
   Movement()
   {
@@ -29,6 +50,19 @@ class Movement
 
     AFMS.begin();  // create with the default frequency 1.6KHz
     val = analogRead(analogPin);  // read the input pin
+	
+	infra_pin = 11;
+	pinMode(infra_pin, INPUT);
+	infra_val = 0;
+
+	hall_1_pin = 8;
+	hall_2_pin = 9;
+	pinMode(hall_1_pin, INPUT);
+	pinMode(hall_2_pin, INPUT);
+	hall_1_val = 0;
+	hall_2_val = 0;
+	
+	LED_flash_pin = 5;
 
     // Read the initial colour and record
     // (Throughout, 0 for black and 1 for white)
@@ -38,18 +72,6 @@ class Movement
     else {
       colour = 1;
     }
-  }
-
-/***********************************************************************************************************************************/  
-  void test_dumper()
-  {
-	  myMotor1->setSpeed(255);
-	  myMotor2->setSpeed(255);
-	  myMotor1->run(FORWARD);
-	  myMotor2->run(FORWARD);
-	  delay(1500);
-	  myMotor1->run(RELEASE);
-	  myMotor2->run(RELEASE);
   }
   
 /***********************************************************************************************************************************/
@@ -116,6 +138,9 @@ class Movement
   
   void drive(bool dir, int lvl, float distance)
   {
+		
+	digitalWrite(LED_flash_pin, HIGH);
+	
     myMotor1->setSpeed(lvl);
     myMotor2->setSpeed(lvl);
     int divisions2 = round((50*distance)/(3.1416*5));
@@ -126,10 +151,17 @@ class Movement
       Serial.println("Moving forwards...");
       while (angle_div()+3 < divisions2)
       {
-		  Serial.println("in loop");
         myMotor1->run(BACKWARD);
         myMotor2->run(BACKWARD);
+		
+		infra_val = digitalRead(infra_pin);
+		if(infra_val == 1){
+			
+			brake();
+			process_box();
+		}
       }
+	
       Serial.println("Braking...");
 	  Serial.println(distance);
       myMotor1->run(FORWARD);
@@ -159,6 +191,7 @@ class Movement
     }
     end_drive:
         Serial.println("end driving...");
+		digitalWrite(LED_flash_pin, LOW);
   }
 
 /***********************************************************************************************************************************/
@@ -167,7 +200,10 @@ class Movement
   //in a certain direction (dir is 0 for right and 1 for left)
   void turn(bool dir, int lvl, float angle)
   {
-    float r = 14;
+    float r = 12.5;
+	
+	digitalWrite(LED_flash_pin, HIGH);
+	
     myMotor1->setSpeed(lvl);
     myMotor2->setSpeed(lvl);
     int divisions2 = round((10*r*angle)/(36*5));
@@ -180,7 +216,7 @@ class Movement
       Serial.println();
       
 	  //can add constant here if it is overturning eg angle_div() +3
-      while (angle_div() < divisions2)
+      while (angle_div()+2 < divisions2)
       {
         myMotor1->run(FORWARD);
         myMotor2->run(BACKWARD);
@@ -201,7 +237,7 @@ class Movement
       Serial.println();
 
       //can add constant here if it is overturning eg angle_div() +3
-      while (angle_div() < divisions2)
+      while (angle_div()+2 < divisions2)
       {
         myMotor1->run(BACKWARD);
         myMotor2->run(FORWARD);
@@ -216,6 +252,7 @@ class Movement
      }
       end_turn:
         Serial.println("end turning...");
+		digitalWrite(LED_flash_pin, LOW);
     }
 	
 /***********************************************************************************************************************************/  
@@ -223,6 +260,8 @@ class Movement
   //again follows the system 'quirk' -> to move forwards, motor set BACKWARD
   void continuous_drive(int lvl)
   {
+	digitalWrite(LED_flash_pin, HIGH);  
+	  
 	Serial.println("continuous drive");
     myMotor1->setSpeed(lvl);
     myMotor2->setSpeed(lvl);
@@ -242,7 +281,65 @@ class Movement
       delay(30);
       myMotor1->run(RELEASE);
       myMotor2->run(RELEASE);
+	  
+	  digitalWrite(LED_flash_pin, LOW);
   }
+  
+/***********************************************************************************************************************************/
+  //called when the infrared sensor has been tripped, signalling there is a box under the hall effect
+  void process_box(){
+	  
+	hall_1_val = digitalRead(8);
+	hall_2_val = digitalRead(9);
+	
+	Serial.println("processing box...");
+
+	//both the hall effect values have to be 1 to signify the box is magnetic
+	if(hall_1_val == 1 || hall_2_val == 1){
+
+	  Serial.println("magnetic... discard");
+
+	}
+	else
+	{
+	  Serial.println("non-magnetic... storing box");
+
+	  //drive forward so the box lines up with the pusher
+	  drive_to_pusher();
+
+	  //activate pusher
+	  
+	}
+  }
+/***********************************************************************************************************************************/
+  //moves forward the small amount between the sensors and the pusher
+  void drive_to_pusher(){
+	  continuous_drive(100);
+	  
+	  delay(50);
+	  
+	  brake();
+  }
+
+/***********************************************************************************************************************************/
+  //the motor movement for the tipper
+  void dump_blocks()
+  {
+	  myMotor3->setSpeed(255);
+	  myMotor4->setSpeed(255);
+	  myMotor3->run(FORWARD);
+	  myMotor4->run(FORWARD);
+	  delay(2000);
+	  myMotor3->run(RELEASE);
+	  myMotor4->run(RELEASE);
+
+    myMotor3->run(BACKWARD);
+	  myMotor4->run(BACKWARD);
+	  delay(2000);
+	  myMotor3->run(RELEASE);
+	  myMotor4->run(RELEASE);
+  }
+
 };
 #endif
 

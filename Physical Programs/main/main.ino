@@ -27,7 +27,7 @@ using namespace std;
 //for direction, 0 is right (clockwise) 1 is left (anticlockwise)
 void turn(int direction, int bearing){
   Movement mov;
-  mov.turn(direction, 150, bearing);
+  mov.turn(direction, 120, bearing);
 }
 
 /***********************************************************************************************************************************/
@@ -42,16 +42,23 @@ void drive(bool continuous, int direction = 0, int speed = 200, int distance = 0
     mov.continuous_drive(speed);
     
     while(!sensor_tripped){
+      
       infra_val = digitalRead(infra_pin);
+      
       if(infra_val == 1){
         sensor_tripped = true;
         
         //prints message for Python so it knows not to go to that box again, as it has already been processed
         Serial.println("processed box");
+
+        delay(500);
+        mov.brake();
+    
+        mov.process_box();
       }
+      
     }
-    delay(500);
-    mov.brake();
+    
   } 
   else
   {
@@ -67,7 +74,7 @@ void initial_sweep(){
   Serial.println("conducting initial sweep");
   
   drive(0, 0, 200, 180);
-  turn(0, 92);
+  turn(0, 88);
 
   //this checks if the robot is close enough to the wall every 30cm and makes small angle adjustments accordingly
   for(int i = 0; i < 5; i++){
@@ -76,22 +83,22 @@ void initial_sweep(){
 
     if(sonic_read > 5){
       turn(1, 3);
-    }else
-    if(sonic_read < 4){
-      turn(0, 3);
     }
-    
   }
   
   drive(0, 0, 200, 30);
-  turn(1, 90);
+  turn(1, 95);
   drive(0, 1, 200, 20);
   turn(0,179);
   drive(0, 0, 200, 80);
-  turn(1,90);
-  drive(0, 1, 200, 30);
-  turn(0, 179);
+  turn(0,90);
      
+}
+
+/***********************************************************************************************************************************/
+void empty_tray(){
+  Movement mov;
+  mov.dump_blocks();
 }
 
 /***********************************************************************************************************************************/
@@ -107,12 +114,13 @@ void setup() {
   distance_string = "";
   distance_value = 0;
 
-  //infra_pin = 11;
-  //pinMode(infra_pin, INPUT);
-
+  infra_pin = 11;
+  pinMode(infra_pin, INPUT);
   infra_val = 0;
- 
+
+  empty_tray();
   //initial_sweep();
+
 }
 
 /***********************************************************************************************************************************/
@@ -159,6 +167,9 @@ void loop(){
       drive(0, 0, 150, 250);
       drive(0, 1, 150, 12);
       turn(0,90);
+      
+      empty_tray();
+      
       drive(0, 0, 200, 60);
       final_procedure = false;
     }
