@@ -321,6 +321,7 @@ class Movement
 	  brake();
 
 	  //activate pusher
+	  activate_pusher();
 	  
 	} */
 	
