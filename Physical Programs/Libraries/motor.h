@@ -2,6 +2,7 @@
 #define Morse_h
 #include <Wire.h>
 #include <Adafruit_MotorShield.h>
+#include <Servo.h>
 
 using namespace std;
 class Movement
@@ -15,7 +16,7 @@ class Movement
   Adafruit_DCMotor *myMotor2 = AFMS.getMotor(2);
   
   //Add servo for pusher
-  
+  Servo pusher;
   
   // Define flipper motors
   Adafruit_DCMotor *myMotor3 = AFMS.getMotor(3);
@@ -338,6 +339,32 @@ class Movement
 	  brake();
 	  
 	  delay(4000);
+  }
+
+/***********************************************************************************************************************************/
+  // Pusher function to activate servo, pushing blocks into bin
+
+  void activate_pusher()
+  {
+    pusher.attach(9);  // attaches the servo on pin 9 to the servo object
+    //run tipper motors backward to ensure contact with table
+    myMotor3->setSpeed(255);
+    myMotor4->setSpeed(255);
+    myMotor3->run(BACKWARD);
+    myMotor4->run(BACKWARD);
+
+    while (iteration <= 2) {
+      for (pos = 0; pos <= 180; pos += 12) { // goes from 0 degrees to 180 degrees
+        // in steps of 1 degree
+        myservo.write(pos);              // tell servo to go to position in variable 'pos'
+        delay(15);                       // waits 15ms for the servo to reach the position
+      }
+      for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+        myservo.write(pos);              // tell servo to go to position in variable 'pos'
+        delay(15);                       // waits 15ms for the servo to reach the position
+      }
+      iteration = iteration + 1;
+    }
   }
 
 /***********************************************************************************************************************************/
