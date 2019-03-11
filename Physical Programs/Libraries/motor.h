@@ -27,8 +27,8 @@ class Movement
   int divisions;
   bool colour;
 
-  int lower_bound_for_high = 25;  //the minimum value mesaured by encoder to be considered a high reading
-  int upper_bound_for_low = 20;  //the maximum value mesaured by encoder to be considered a low reading
+  int lower_bound_for_high = 45;  //the minimum value mesaured by encoder to be considered a high reading
+  int upper_bound_for_low = 35;  //the maximum value mesaured by encoder to be considered a low reading
 
   int infra_pin;
   int infra_val;
@@ -63,6 +63,7 @@ class Movement
 	hall_2_val = 0;
 	
 	LED_flash_pin = 5;
+	pinMode(LED_flash_pin, OUTPUT);
 
     // Read the initial colour and record
     // (Throughout, 0 for black and 1 for white)
@@ -138,9 +139,7 @@ class Movement
   
   void drive(bool dir, int lvl, float distance)
   {
-		
-	digitalWrite(LED_flash_pin, HIGH);
-	
+			
     myMotor1->setSpeed(lvl);
     myMotor2->setSpeed(lvl);
     int divisions2 = round((50*distance)/(3.1416*5));
@@ -151,17 +150,25 @@ class Movement
       Serial.println("Moving forwards...");
       while (angle_div()+3 < divisions2)
       {
+		digitalWrite(LED_flash_pin, HIGH);
         myMotor1->run(BACKWARD);
         myMotor2->run(BACKWARD);
 		
 		infra_val = digitalRead(infra_pin);
-		if(infra_val == 1){
-			
+		if(infra_val == 1 && !sensor_tripped){
 			brake();
 			process_box();
+			
+			//this should reduce how much further it needs to travel
+			//as it has just moved 5cm extra forwards.
+			divisions2 = divisions2 - round((50*5)/(3.1416*5));
+			
+			myMotor1->setSpeed(lvl);
+			myMotor2->setSpeed(lvl);
 		}
       }
-	
+	  
+	  
       Serial.println("Braking...");
 	  Serial.println(distance);
       myMotor1->run(FORWARD);
@@ -176,7 +183,7 @@ class Movement
       Serial.println("Moving backwards...");
       while (angle_div()+3 < divisions2)
       {
-        //Serial.println(angle_div());
+        digitalWrite(LED_flash_pin, HIGH);
         myMotor1->run(FORWARD);
         myMotor2->run(FORWARD);
       }
@@ -202,8 +209,6 @@ class Movement
   {
     float r = 12.5;
 	
-	digitalWrite(LED_flash_pin, HIGH);
-	
     myMotor1->setSpeed(lvl);
     myMotor2->setSpeed(lvl);
     int divisions2 = round((10*r*angle)/(36*5));
@@ -218,6 +223,7 @@ class Movement
 	  //can add constant here if it is overturning eg angle_div() +3
       while (angle_div()+2 < divisions2)
       {
+		digitalWrite(LED_flash_pin, HIGH);
         myMotor1->run(FORWARD);
         myMotor2->run(BACKWARD);
       }
@@ -239,6 +245,7 @@ class Movement
       //can add constant here if it is overturning eg angle_div() +3
       while (angle_div()+2 < divisions2)
       {
+		digitalWrite(LED_flash_pin, HIGH);
         myMotor1->run(BACKWARD);
         myMotor2->run(FORWARD);
       }
@@ -259,8 +266,7 @@ class Movement
   //this tells motors to run continuously until it is given a further instruction (ie brake)
   //again follows the system 'quirk' -> to move forwards, motor set BACKWARD
   void continuous_drive(int lvl)
-  {
-	digitalWrite(LED_flash_pin, HIGH);  
+  {  
 	  
 	Serial.println("continuous drive");
     myMotor1->setSpeed(lvl);
@@ -275,29 +281,33 @@ class Movement
   //brake is used with conditioned_drive to stop the  robot when a conditon is met
   void brake()
   {
-	  Serial.println("braking");
-      myMotor1->run(FORWARD);
-      myMotor2->run(FORWARD);
-      delay(30);
-      myMotor1->run(RELEASE);
-      myMotor2->run(RELEASE);
-	  
-	  digitalWrite(LED_flash_pin, LOW);
+	Serial.println("braking");
+    myMotor1->run(FORWARD);
+    myMotor2->run(FORWARD);
+    delay(30);
+    myMotor1->run(RELEASE);
+    myMotor2->run(RELEASE);
+	
+	digitalWrite(LED_flash_pin, LOW);
   }
   
 /***********************************************************************************************************************************/
   //called when the infrared sensor has been tripped, signalling there is a box under the hall effect
   void process_box(){
 	  
+	sensor_tripped = true;
+	
 	hall_1_val = digitalRead(8);
 	hall_2_val = digitalRead(9);
 	
 	Serial.println("processing box...");
 
-	//both the hall effect values have to be 1 to signify the box is magnetic
+	/* //both the hall effect values have to be 1 to signify the box is magnetic
 	if(hall_1_val == 1 || hall_2_val == 1){
 
 	  Serial.println("magnetic... discard");
+	  
+	  drive(0,100, 10);
 
 	}
 	else
@@ -305,20 +315,29 @@ class Movement
 	  Serial.println("non-magnetic... storing box");
 
 	  //drive forward so the box lines up with the pusher
-	  drive_to_pusher();
+	  drive(0,100, 10);
+	  delay(2000);
+	  brake();
 
 	  //activate pusher
 	  
-	}
+	} */
+	
+	drive(0,100, 10);
+	delay(2000);
+	
+	sensor_tripped = false;
   }
 /***********************************************************************************************************************************/
   //moves forward the small amount between the sensors and the pusher
   void drive_to_pusher(){
 	  continuous_drive(100);
 	  
-	  delay(50);
+	  delay(800);
 	  
 	  brake();
+	  
+	  delay(4000);
   }
 
 /***********************************************************************************************************************************/

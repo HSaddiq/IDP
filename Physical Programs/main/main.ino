@@ -23,6 +23,8 @@ using namespace std;
   int infra_pin;
   int infra_val;
 
+  int LED_flash_pin;
+
 /***********************************************************************************************************************************/
 //for direction, 0 is right (clockwise) 1 is left (anticlockwise)
 void turn(int direction, int bearing){
@@ -43,6 +45,7 @@ void drive(bool continuous, int direction = 0, int speed = 200, int distance = 0
     
     while(!sensor_tripped){
       
+      digitalWrite(LED_flash_pin, HIGH);
       infra_val = digitalRead(infra_pin);
       
       if(infra_val == 1){
@@ -73,26 +76,27 @@ void initial_sweep(){
   
   Serial.println("conducting initial sweep");
   
-  drive(0, 0, 200, 180);
-  turn(0, 88);
+  drive(0, 0, 200, 176);
+  turn(0, 92);
+  drive(0, 1, 200, 50);
 
   //this checks if the robot is close enough to the wall every 30cm and makes small angle adjustments accordingly
-  for(int i = 0; i < 5; i++){
-    drive(0, 0, 200, 30);
-    sonic_read = ultrasonic.read(CM);
-
-    if(sonic_read > 5){
-      turn(1, 3);
-    }
-  }
+//  for(int i = 0; i < 5; i++){
+//    drive(0, 0, 200, 30);
+//    sonic_read = ultrasonic.read(CM);
+//
+//    if(sonic_read > 3){
+//      turn(1, 3);
+//    }
+//    if(sonic_read > 1 && sonic_read < 2){
+//      turn(0, 3);
+//    }
+//  }
   
-  drive(0, 0, 200, 30);
-  turn(1, 95);
-  drive(0, 1, 200, 20);
-  turn(0,179);
-  drive(0, 0, 200, 80);
-  turn(0,90);
-     
+  drive(0, 0, 200, 180);
+  turn(1, 90);
+  drive(0, 1, 200, 60);
+  turn(1, 90); 
 }
 
 /***********************************************************************************************************************************/
@@ -118,8 +122,10 @@ void setup() {
   pinMode(infra_pin, INPUT);
   infra_val = 0;
 
-  empty_tray();
-  //initial_sweep();
+  LED_flash_pin = 5;
+  pinMode(LED_flash_pin, OUTPUT);
+
+  initial_sweep();
 
 }
 
@@ -164,7 +170,7 @@ void loop(){
     //if it is the final procedure then we are heading for the shelf and want to overrun the motors to square up
     //the speed is also set slightly lower to avoid damage ocurring during the deliberate crash
     if(final_procedure){
-      drive(0, 0, 150, 250);
+      drive(0, 0, 150, 200);
       drive(0, 1, 150, 12);
       turn(0,90);
       
