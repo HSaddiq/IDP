@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from classes import box
 
 
 # Contains all functions related to bearing and positioning of robot
@@ -71,6 +72,20 @@ def find_triangle(frame, lower_hue, upper_hue):
                 list_of_coords.append((xbar, ybar))
 
     return list_of_coords[0]
+
+
+# Returns an updated list of boxes after the robot has finished its initial sweep
+
+def update_box_positions(frame):
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    box_coords = find_box_coords(hsv_frame)
+
+    boxes = []
+    for i in box_coords:
+        boxes.append(box(i[0], i[1], True))
+
+    print("Boxes Found: {}".format(len(boxes)))
+    return boxes
 
 
 # Testing suite
