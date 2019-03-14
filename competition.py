@@ -84,7 +84,7 @@ def update_bot_localisation():
         cv2.waitKey(10)
 
         # Trying to find position of unloading for boxes
-        cv2.circle(frame, (0, 285), 10, (0, 255, 0), -1)
+        cv2.circle(frame, (0, 260), 10, (0, 255, 0), -1)
 
         # trying to find position of end state
         cv2.circle(frame, (48, 60), 10, (0, 0, 0), -1)
@@ -115,7 +115,7 @@ def communicate_via_serial():
             boxes = img_utils.update_box_positions(frame)
 
             # Sending bearing to end stage for first unloading stage
-            unloading_position = [0, 285]
+            unloading_position = [0, 270]
 
             angle_to_unloading = utils.get_angle([robot.x, robot.y], unloading_position,
                                                  robot.bearing)
@@ -139,7 +139,7 @@ def communicate_via_serial():
                 print(arduino_string)
 
                 # code for driving into the unloading stage
-                unloading_position = [0, 285]
+                unloading_position = [0, 270]
 
                 angle_to_unloading = utils.get_angle([robot.x, robot.y], unloading_position,
                                                      robot.bearing)
@@ -151,6 +151,27 @@ def communicate_via_serial():
 
                 # send angle to arduino via serial (0-360)1
                 ser.write(str(str(angle_to_unloading) + "/n").encode("UTF-8"))
+
+
+                #Repeat the same process with a position closer to the end sequence, for greater accuracy
+                end_string = ser.readline()
+                print(end_string)
+
+                if arduino_string == b'requesting second bearing\r\n':
+                    # code for driving into the unloading stage]
+                    unloading_position = [0, 270]
+
+                    angle_to_unloading = utils.get_angle([robot.x, robot.y], unloading_position,
+                                                         robot.bearing)
+
+                    if angle_to_unloading < 0:
+                        angle_to_unloading = 360 + angle_to_unloading
+
+                    print("sending {}".format(angle_to_unloading))
+
+                    # send angle to arduino via serial (0-360)1
+                    ser.write(str(str(angle_to_unloading) + "/n").encode("UTF-8"))
+
 
             # get nearest available box and mark as unavailable
             nearest_box = utils.get_nearest_box(boxes, robot)

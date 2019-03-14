@@ -1,9 +1,5 @@
 import numpy as np
 
-# test data
-list_of_coords = [[32, 54], [74, 12], [54, 54], [27, 49], [28, 54], [78, 102], [23, 15], [1, 1], [2, 2], [3, 3]]
-current_coord = [0, 0]
-
 
 def get_next_coord(list, current):
     # Returns the closest known box coordinate to the current coordinate
@@ -45,24 +41,12 @@ def calculate_turn_angle(current_coord, next_coord, current_bearing):
     current_bearing = current_bearing + 360
     theta = theta + 360
 
-    # print(current_bearing, theta)
-
     bearing = theta - current_bearing
-
-    # print(bearing)
 
     bearing = bearing % 360
 
-    # print(bearing)
-
     if (bearing < 0):
         bearing = 360 + bearing
-
-    #    if(bearing < -180):
-    #        bearing = 360 + bearing
-    #    elif(bearing > 180):
-    #        bearing = 360 - bearing
-
     return round(bearing)
 
 
@@ -87,15 +71,6 @@ def get_distance(current_coords, next_coords):
     return int(round(pixel_distance * pixel_conversion))
 
 
-# test for getting list of coordinates in order from get_next_coord
-# for i in range(0, 5):
-#     current_coord = get_next_coord(list_of_coords, current_coord)
-# print(current_coord)
-
-# test for calculating a turn angle based on current position, next block position and the current bearing from 0 to 360 anticlockwise
-# print(calculate_turn_angle([0,0],[1,0],270))
-
-
 def get_nearest_box(boxes, robot):
     # takes a list of boxes, filters for ones that are available then returns box with nearest coordinates
     def distance_to_robot(box):
@@ -103,9 +78,7 @@ def get_nearest_box(boxes, robot):
 
     available_boxes = [box for box in boxes if box.available]
 
-    available_boxes = sorted(available_boxes, key=distance_to_robot)
-    # for i in available_boxes:
-    #     print([i.x, i.y])
+    available_boxes.sort(key=lambda box: box.x)
     return available_boxes[0]
 
 
@@ -116,9 +89,9 @@ def get_nearest_box_with_removal(boxes, robot):
 
     available_boxes = [box for box in boxes if box.available]
 
-    available_boxes = sorted(available_boxes, key=distance_to_robot)
-    # for i in available_boxes:
-    #     print([i.x, i.y])
+    # sort based on lowest x position
+    available_boxes.sort(key=lambda bot: bot.x)
+
     nearest_box = available_boxes[0]
     updated_box = nearest_box
     updated_box.available = False
@@ -126,10 +99,3 @@ def get_nearest_box_with_removal(boxes, robot):
     boxes[boxes.index(nearest_box)] = updated_box
 
     return boxes, nearest_box
-
-
-if __name__ == '__main__':
-    test_coords_1 = [0, 0]
-    test_coords_2 = [0, 100]
-
-    print(get_distance(test_coords_1, test_coords_2))
