@@ -5,25 +5,32 @@
 
 using namespace std;
 
-  //for turn
-  String bearing_string;
-  int bearing_value;
-  int current_bearing;
-  int direction;
+//for turn
+String bearing_string;
+int bearing_value;
+int current_bearing;
+int direction;
 
-  //for ultrasound
-  Ultrasonic ultrasonic(12,13);
-  int ultra_distance;
+//for ultrasound
+Ultrasonic ultrasonic(12,13);
+int ultra_distance;
 
-  //for final procedure
-  bool final_procedure;
-  String distance_string;
-  int distance_value;
-  
-  int infra_pin;
-  int infra_val;
+//for final procedure
+bool ledge_procedure;
+bool final_procedure;
 
-  int LED_flash_pin;
+String distance_string;
+int distance_value;
+
+int infra_pin;
+int infra_val;
+
+int LED_flash_pin;
+
+unsigned long startMillis;
+unsigned long currentMillis;
+bool timeout_correction;
+
 
 /***********************************************************************************************************************************/
 //for direction, 0 is right (clockwise) 1 is left (anticlockwise)
@@ -41,23 +48,37 @@ void drive(bool continuous, int direction = 0, int speed = 200, int distance = 0
 
   //if the drive mode is continuous, it will stop only when the infrared is tripped
   if(continuous){
-    mov.continuous_drive(speed);
+
+    timeout_correction = false;
+    startMillis = millis();
     
-    while(!sensor_tripped){
+    mov.continuous_drive(speed);
+
+    currentMillis = millis();
+    
+    while(!sensor_tripped && !timeout_correction){
       
       digitalWrite(LED_flash_pin, HIGH);
-      infra_val = digitalRead(infra_pin);
-      
-      if(infra_val == 1){
-        sensor_tripped = true;
-        
-        //prints message for Python so it knows not to go to that box again, as it has already been processed
-        Serial.println("processed box");
+      infra_val = analogRead(infra_pin);
 
-        delay(500);
+      currentMillis = millis();
+
+      // if the continuous drive has been driving for more than 15 seconds, we assume something has gone wrong
+      // so stop and request bearing to the next box
+      if(currentMillis - startMillis > 18000 && !timeout_correction){
+        timeout_correction = true;
+        mov.drive(1, 200, 40);
+        Serial.println("processed box");
+      }
+      
+      if(infra_val > 100){
+        sensor_tripped = true;
+                
         mov.brake();
     
         mov.process_box();
+
+        Serial.println("processed box");
       }
       
     }
@@ -72,31 +93,47 @@ void drive(bool continuous, int direction = 0, int speed = 200, int distance = 0
 /***********************************************************************************************************************************/
 //A series of specific instructions for collecting the predictably located boxes
 void initial_sweep(){
-  int sonic_read = 0;
   
-  Serial.println("conducting initial sweep");
+  Serial.println("starting initial sweep"); 
   
-  drive(0, 0, 200, 176);
-  turn(0, 92);
-  drive(0, 1, 200, 50);
+  drive(0, 0, 200, 210);
+  drive(0, 1, 200, 15);
+  turn(0, 105);
+  drive(0, 1, 200, 40);
 
   //this checks if the robot is close enough to the wall every 30cm and makes small angle adjustments accordingly
-//  for(int i = 0; i < 5; i++){
-//    drive(0, 0, 200, 30);
-//    sonic_read = ultrasonic.read(CM);
-//
-//    if(sonic_read > 3){
-//      turn(1, 3);
-//    }
-//    if(sonic_read > 1 && sonic_read < 2){
-//      turn(0, 3);
-//    }
-//  }
+  for(int i = 0; i < 6; i++){
+    drive(0, 0, 200, 30);
+    ultra_distance = ultrasonic.read(CM);
+
+    if(ultra_distance >= 4){
+      turn(1, 6);
+    }
+  }
   
-  drive(0, 0, 200, 180);
+  drive(0, 0, 200, 50);
+
+  
+  drive(0, 1, 200, 20 );
   turn(1, 90);
-  drive(0, 1, 200, 60);
-  turn(1, 90); 
+  drive(0, 0, 200, 30);
+  drive(0, 1, 200, 30);
+  turn(0, 179);
+  
+  drive(0, 1, 200, 35);
+  drive(0, 0, 200, 130);
+
+  /*turn(1, 90);
+  drive(0, 0, 200, 30);
+  drive(0, 1, 200, 30);
+  turn(1, 179);
+  
+  drive(0, 0, 200, 50);*/
+
+  turn(1,90);
+  drive(0, 1, 200, 120);
+
+  Serial.println("finished initial sweep");
 }
 
 /***********************************************************************************************************************************/
@@ -114,12 +151,12 @@ void setup() {
   current_bearing = 0;
   direction = 0;
 
-  final_procedure = false;
+  ledge_procedure = true;
+  final_procedure = false ;
   distance_string = "";
   distance_value = 0;
 
-  infra_pin = 11;
-  pinMode(infra_pin, INPUT);
+  infra_pin = A0;
   infra_val = 0;
 
   LED_flash_pin = 5;
@@ -133,14 +170,14 @@ void setup() {
 //main loop of programme, requesting bearing from the python
 void loop(){
   Serial.println("requesting bearing");
-  //delay(3000);
 
   //read bearing as a string and convert to integer
   bearing_string = Serial.readStringUntil('\n');
   bearing_value = bearing_string.toInt();
 
-  //if the bearing is 5000, Python is telling us there are no more boxes, so we enter final procedure
+  //if the bearing is 5000, this is the signal from Python that there are no more boxes, so we enter final procedure
   if(bearing_value == 5000){
+    ledge_procedure = true;
     final_procedure = true;
     Serial.println("receieved final");
     delay(50);
@@ -169,14 +206,33 @@ void loop(){
 
     //if it is the final procedure then we are heading for the shelf and want to overrun the motors to square up
     //the speed is also set slightly lower to avoid damage ocurring during the deliberate crash
-    if(final_procedure){
-      drive(0, 0, 150, 200);
+    if(ledge_procedure){
+
+
+      drive(0, 0, 200, 200);
       drive(0, 1, 150, 12);
-      turn(0,90);
+      turn(0,94);
       
       empty_tray();
+
+      if(final_procedure)
+      {
+        // drive forwards until the robot has straightened against the side of the table near the finish
+        drive(0, 0, 200, 120);
+
+        // reverse back into the finish box
+        drive(0, 1, 200, 15);
+      }
+      else
+      {
+        turn(1, 15);
+        drive(0, 1, 200, 200);
+        drive(0, 0, 200, 30);
+        turn(0, 90);
+        drive(0, 0, 200, 50);
+      }
       
-      drive(0, 0, 200, 60);
+      ledge_procedure = false;
       final_procedure = false;
     }
     //otherwise just drive until the infrared sensor is tripped
