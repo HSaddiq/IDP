@@ -39,6 +39,8 @@ class Movement
   int hall_1_val;
   int hall_2_val;
   
+  bool magnetic = false;
+  
   int LED_flash_pin;
   
   bool sensor_tripped = false;
@@ -52,7 +54,7 @@ class Movement
     AFMS.begin();  // create with the default frequency 1.6KHz
     val = analogRead(analogPin);  // read the input pin
 	
-	infra_pin = 11;
+	infra_pin = A0;
 	pinMode(infra_pin, INPUT);
 	infra_val = 0;
 
@@ -151,24 +153,43 @@ class Movement
       Serial.println("Moving forwards...");
       while (angle_div()+3 < divisions2)
       {
-		digitalWrite(LED_flash_pin, HIGH);
+		
         myMotor1->run(BACKWARD);
         myMotor2->run(BACKWARD);
 		
-		infra_val = digitalRead(infra_pin);
-		if(infra_val == 1 && !sensor_tripped){
+		//LED starts flashing after the motors start moving
+		digitalWrite(LED_flash_pin, HIGH);
+		
+		infra_val = analogRead(infra_pin);
+		//Serial.println(infra_val);
+		if(infra_val > 100 && !sensor_tripped){
+			Serial.println("IR TRIPPED");
 			brake();
 			process_box();
 			
 			//this should reduce how much further it needs to travel
 			//as it has just moved 5cm extra forwards.
-			divisions2 = divisions2 - round((50*5)/(3.1416*5));
+			divisions2 = divisions2 - round((50*8)/(3.1416*5));
 			
 			myMotor1->setSpeed(lvl);
 			myMotor2->setSpeed(lvl);
 		}
+		if(sensor_tripped){
+			
+			hall_1_val = digitalRead(8);
+			hall_2_val = digitalRead(9);
+	
+			Serial.println(hall_1_val);
+			Serial.println(hall_2_val);
+			
+			
+			//both the hall effect values have to be 1 to signify the box is magnetic
+			if(hall_1_val == 1 || hall_2_val == 1){
+				magnetic = true;
+
+			}
+		}
       }
-	  
 	  
       Serial.println("Braking...");
 	  Serial.println(distance);
@@ -184,9 +205,11 @@ class Movement
       Serial.println("Moving backwards...");
       while (angle_div()+3 < divisions2)
       {
-        digitalWrite(LED_flash_pin, HIGH);
         myMotor1->run(FORWARD);
         myMotor2->run(FORWARD);
+		
+		//LED starts flashing after the motors start moving
+		digitalWrite(LED_flash_pin, HIGH);
       }
       Serial.println("Braking...");
 	  Serial.println(distance);
@@ -224,9 +247,10 @@ class Movement
 	  //can add constant here if it is overturning eg angle_div() +3
       while (angle_div()+2 < divisions2)
       {
-		digitalWrite(LED_flash_pin, HIGH);
         myMotor1->run(FORWARD);
         myMotor2->run(BACKWARD);
+		
+		digitalWrite(LED_flash_pin, HIGH);
       }
       Serial.println("Braking...");
       myMotor1->run(BACKWARD);
@@ -246,9 +270,10 @@ class Movement
       //can add constant here if it is overturning eg angle_div() +3
       while (angle_div()+2 < divisions2)
       {
-		digitalWrite(LED_flash_pin, HIGH);
         myMotor1->run(BACKWARD);
         myMotor2->run(FORWARD);
+		
+		digitalWrite(LED_flash_pin, HIGH);
       }
       Serial.println("Braking...");
       myMotor1->run(FORWARD);
@@ -297,49 +322,23 @@ class Movement
   void process_box(){
 	  
 	sensor_tripped = true;
+	magnetic = false;
 	
-	hall_1_val = digitalRead(8);
-	hall_2_val = digitalRead(9);
+	
 	
 	Serial.println("processing box...");
-
-	/* //both the hall effect values have to be 1 to signify the box is magnetic
-	if(hall_1_val == 1 || hall_2_val == 1){
-
-	  Serial.println("magnetic... discard");
-	  
-	  drive(0,100, 10);
-
-	}
-	else
-	{
-	  Serial.println("non-magnetic... storing box");
-
-	  //drive forward so the box lines up with the pusher
-	  drive(0,100, 10);
-	  delay(2000);
-	  brake();
-
-	  //activate pusher
-	  activate_pusher();
-	  
-	} */
 	
-	drive(0,100, 10);
-	delay(2000);
+	//drive forward so the box lines up with the pusher
+	drive(0,100,9);
+	
+	if(!magnetic){
+		activate_pusher();
+	}
+
+	
 	
 	sensor_tripped = false;
-  }
-/***********************************************************************************************************************************/
-  //moves forward the small amount between the sensors and the pusher
-  void drive_to_pusher(){
-	  continuous_drive(100);
-	  
-	  delay(800);
-	  
-	  brake();
-	  
-	  delay(4000);
+		
   }
 
 /***********************************************************************************************************************************/
@@ -347,7 +346,14 @@ class Movement
 
   void activate_pusher()
   {
-    pusher.attach(9);  // attaches the servo on pin 9 to the servo object
+	  
+	int pos = 0;
+	int iteration = 0;
+	
+    pusher.attach(10);  // attaches the servo on pin 9 to the servo object
+	
+	
+	
     //run tipper motors backward to ensure contact with table
     myMotor3->setSpeed(255);
     myMotor4->setSpeed(255);
@@ -357,15 +363,28 @@ class Movement
     while (iteration <= 2) {
       for (pos = 0; pos <= 180; pos += 12) { // goes from 0 degrees to 180 degrees
         // in steps of 1 degree
-        myservo.write(pos);              // tell servo to go to position in variable 'pos'
+        pusher.write(pos);              // tell servo to go to position in variable 'pos'
         delay(15);                       // waits 15ms for the servo to reach the position
       }
       for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
-        myservo.write(pos);              // tell servo to go to position in variable 'pos'
+        pusher.write(pos);              // tell servo to go to position in variable 'pos'
         delay(15);                       // waits 15ms for the servo to reach the position
       }
       iteration = iteration + 1;
     }
+	
+    myMotor3->run(FORWARD);
+    myMotor4->run(FORWARD);
+	delay(700);
+	myMotor3->setSpeed(20);
+    myMotor4->setSpeed(20);
+	myMotor3->run(BACKWARD);
+    myMotor4->run(BACKWARD);
+	delay(1250);
+	myMotor3->run(RELEASE);
+    myMotor4->run(RELEASE);	
+	
+	
   }
 
 /***********************************************************************************************************************************/
@@ -380,7 +399,7 @@ class Movement
 	  myMotor3->run(RELEASE);
 	  myMotor4->run(RELEASE);
 
-    myMotor3->run(BACKWARD);
+      myMotor3->run(BACKWARD);
 	  myMotor4->run(BACKWARD);
 	  delay(2000);
 	  myMotor3->run(RELEASE);

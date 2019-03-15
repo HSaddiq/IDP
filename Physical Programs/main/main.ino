@@ -19,6 +19,8 @@ int ultra_distance;
 bool ledge_procedure;
 bool final_procedure;
 
+bool requesting_second_bearing;
+
 String distance_string;
 int distance_value;
 
@@ -131,7 +133,7 @@ void initial_sweep(){
   drive(0, 0, 200, 50);*/
 
   turn(1,90);
-  drive(0, 1, 200, 120);
+  drive(0, 1, 200, 70);
 
   Serial.println("finished initial sweep");
 }
@@ -156,6 +158,8 @@ void setup() {
   distance_string = "";
   distance_value = 0;
 
+  requesting_second_bearing = false;
+
   infra_pin = A0;
   infra_val = 0;
 
@@ -169,7 +173,9 @@ void setup() {
 /***********************************************************************************************************************************/
 //main loop of programme, requesting bearing from the python
 void loop(){
+  
   Serial.println("requesting bearing");
+  delay(50);  
 
   //read bearing as a string and convert to integer
   bearing_string = Serial.readStringUntil('\n');
@@ -207,33 +213,88 @@ void loop(){
     //if it is the final procedure then we are heading for the shelf and want to overrun the motors to square up
     //the speed is also set slightly lower to avoid damage ocurring during the deliberate crash
     if(ledge_procedure){
-
-
-      drive(0, 0, 200, 200);
-      drive(0, 1, 150, 12);
-      turn(0,94);
       
-      empty_tray();
-
+      
       if(final_procedure)
       {
+
+        //drive towards preliminary position
+        drive(0, 0, 200, 80);
+
+        delay(500);
+
+        Serial.println("requesting second bearing");
+        delay(50);
+        
+
+        //read bearing as a string and convert to integer
+        bearing_string = Serial.readStringUntil('\n');
+        bearing_value = bearing_string.toInt();
+
+        //check if the bearing sent is valid and different to the previous one (to make sure it has been updated)
+        if(bearing_value > 0 && bearing_value <= 360 && bearing_value != current_bearing)
+        {
+          current_bearing = bearing_value;
+      
+          //determines the direction of the turn based on the angle given
+          if (bearing_value < 180) 
+          {
+            direction = 1; //LEFT
+          }
+          else
+          {
+            direction = 0; // RIGHT
+            bearing_value = 360 - bearing_value;
+          }
+      
+          //calls the turn function with the given variables
+          turn(direction, bearing_value);
+        }
+
+         
+        // drive to the ledge including straightening up
+        drive(0, 0, 200, 180);
+  
+        // reverse back slightly
+        drive(0, 1, 150, 12);
+  
+        turn(0,94);
+  
+        empty_tray();
+  
         // drive forwards until the robot has straightened against the side of the table near the finish
         drive(0, 0, 200, 120);
-
+  
         // reverse back into the finish box
         drive(0, 1, 200, 15);
+        
+        ledge_procedure = false;
+        final_procedure = false;
+        
       }
       else
       {
+        // drive to the ledge including straightening up
+        drive(0, 0, 200, 180);
+
+        // reverse back slightly
+        drive(0, 1, 150, 12);
+
+        turn(0,94);
+
+        empty_tray();
+
+        
         turn(1, 15);
-        drive(0, 1, 200, 200);
+        drive(0, 1, 200, 40);
+        turn(0, 30);
         drive(0, 0, 200, 30);
-        turn(0, 90);
+        turn(0, 75);
         drive(0, 0, 200, 50);
+
+        ledge_procedure = false;
+        final_procedure = false;
       }
-      
-      ledge_procedure = false;
-      final_procedure = false;
     }
     //otherwise just drive until the infrared sensor is tripped
     else{
